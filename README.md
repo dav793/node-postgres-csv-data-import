@@ -1,10 +1,7 @@
 
 # Import data utility
 
-## 1. Instalar NodeJS y NPM (incluido con NodeJS).
-[Link a sitio de descarga de NodeJS](https://nodejs.org/en/download/)
-
-## 2. Crear estructura de archivos.
+## 1. Crear estructura de archivos.
 En el host, debe crear la carpeta `vol` en donde desee. En mi caso lo coloqué en `C:\Users\estudiante\source\repos\PracticasBDD\vol`.
 
 La carpeta `vol` debe tener la siguiente estructura:
@@ -17,21 +14,28 @@ La carpeta `vol` debe tener la siguiente estructura:
 * La carpeta `vol/dumps` debe contener los archivos `.csv` fuente.
 * La carpeta `vol/node-postgres-csv-data-import` debe contener este repositorio.
 
-## 3. Crear volumen de Docker.
+## 2. Crear volumen de Docker.
 ```
 docker volume create --driver local --opt type=none --opt device=C:/Users/estudiante/source/repos/PracticasBDD/vol --opt o=bind dockerVol
 ```
 
-## 4. Crear contenedor de nodo primario con enlace al volumen de Docker recién creado.
+## 3. Crear contenedor de nodo primario con enlace al volumen de Docker recién creado.
 ```
 docker run -it --name ubuntu1 -p 5431:5431 -v dockerVol:/home/vol --tty ubuntu bash
 ```
 
-## 5. Crear usuario de PostgreSQL.
+## 4. Crear usuario de PostgreSQL.
 Esto debe hacerlo en cada uno de los 3 nodos.
 ```
 sudo -u postgres createuser -s -i -d -r -l -w testuser
 sudo -u postgres psql -c "ALTER ROLE testuser WITH PASSWORD 'testuser';"
+```
+
+## 5. Instalar NodeJS y NPM.
+Dentro del contenedor de nodo primario, utilizar los siguientes comandos.
+```
+sudo apt update
+sudo apt install nodejs npm
 ```
 
 ## 6. Instalar dependencias del proyecto.
@@ -53,7 +57,7 @@ npm run create-db
 ```
 npm start
 ```
-El programa va a durar mucho tiempo en ejecutarse. Cada cierto tiempo imprimirá mensajes de progreso.
+El programa **va a durar mucho tiempo en ejecutarse**. Cada cierto tiempo imprimirá mensajes de progreso.
 
 ### Utilidades varias
 Puede ignorar esta sección. Únicamente está aquí como referencia.
