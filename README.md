@@ -8,7 +8,7 @@ La carpeta `vol` debe tener la siguiente estructura:
 ```
 /vol
 	/dumps
-		/Parking_Violations_Issued_-_Fiscal_Year_2018.csv
+		/Parking_Violations_Issued_-_Fiscal_Year_2021.csv
 	/node-postgres-csv-data-import
 ```
 * La carpeta `vol/dumps` debe contener los archivos `.csv` fuente.
