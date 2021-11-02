@@ -4,13 +4,14 @@
   "description": "",
   "main": "main.js",
   "scripts": {
-    "import-data": "PGUSER=testuser PGHOST=localhost PGPASSWORD=testuser PGDATABASE=postgres PGPORT=5431 node main.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "PGUSER=testuser PGHOST=localhost PGPASSWORD=testuser PGDATABASE=postgres PGPORT=5431 node main.js",
+    "create-db": "sudo -u postgres psql postgres -f \"sql/CREATE.sql\""
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
     "csv-parser": "^3.0.0",
+    "moment": "^2.29.1",
     "pg": "^8.7.1",
     "rxjs": "^7.4.0"
   }
