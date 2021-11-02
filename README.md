@@ -25,7 +25,7 @@ docker run -it --name ubuntu1 -p 5431:5431 -v dockerVol:/home/vol --tty ubuntu b
 ```
 
 ## 4. Crear usuario de PostgreSQL.
-Esto debe hacerlo en cada uno de los 3 nodos.
+Esto debe hacerlo **en cada uno de los 3 nodos**.
 ```
 sudo -u postgres createuser -s -i -d -r -l -w testuser
 sudo -u postgres psql -c "ALTER ROLE testuser WITH PASSWORD 'testuser';"
