@@ -1,15 +1,14 @@
-const { Pool, Client } = require('pg');
+const { Client } = require('pg');
 const { Buffer } = require('buffer');
 const { Observable, of } = require('rxjs');
-const { switchMap, concatMap, reduce } = require('rxjs/operators');
-const csv = require('csv-parser');
+const { switchMap, concatMap, reduce, map } = require('rxjs/operators');
 const fs = require('fs');
 
 const READ_LIMIT = 100000;
 const CSV_PATHS = [
-    '/home/vol/dumps/Parking_Violations_Issued_-_Fiscal_Year_2021.csv'
-    '/home/vol/dumps/Parking_Violations_Issued_-_Fiscal_Year_2020.csv'
-    '/home/vol/dumps/Parking_Violations_Issued_-_Fiscal_Year_2019.csv'
+    '/home/vol/dumps/Parking_Violations_Issued_-_Fiscal_Year_2021.csv',
+    '/home/vol/dumps/Parking_Violations_Issued_-_Fiscal_Year_2020.csv',
+    '/home/vol/dumps/Parking_Violations_Issued_-_Fiscal_Year_2019.csv',
     '/home/vol/dumps/Parking_Violations_Issued_-_Fiscal_Year_2018.csv'
 ];
 
@@ -23,24 +22,14 @@ function connectDB() {
             }
             else {
                 console.log(`Conexion con BD establecida.`);
-                obs.next(res);
+                obs.next(client);
+                obs.complete();
             }
         });
     });
 }
 
-function parseCsv(path) {
-    return new Observable(obs => {
-        const results = [];
-        fs.createReadStream(path)
-            .pipe(csv())
-            .on('data', data => results.push(data))
-            .on('error', err => obs.error(err))
-            .on('end', () => obs.next(results));
-    });
-}
-
-function testStream(path) {
+function streamCsv(path) {
 
     return new Observable(obs => {
         const stream = fs.createReadStream(path);
@@ -54,50 +43,71 @@ function testStream(path) {
 
             })
             .on('error', err => obs.error(err))
-            .on('end', () => console.log('Stream reached end of data'))
+            .on('end', () => console.log('El stream ha leido todos datos'))
             .on('close', () => {
-                console.log(`Stream was closed after ${stream.bytesRead} bytes read`);
+                console.log(`El stream fue cerrado despues de ${stream.bytesRead} bytes leidos`);
                 obs.complete();
             });
     });
     
 }
 
+function processLines(lines, headers, pgClient) {
+
+    return consulta(pgClient);
+
+    // return of(`se procesaron ${lines.length} lineas`);
+
+}
+
+function consulta(client) {
+
+    return new Observable(obs => {
+        client.query('SELECT NOW()', (err, res) => {
+            if (err)
+                obs.error(err);
+            else {
+                obs.next(res);
+                obs.complete();
+            }
+        })
+    });
+
+}
+
 connectDB()
     .pipe(
-        switchMap(conn => {
+        switchMap(pgClient => {
 
-            return testStream(CSV_PATHS[0]).pipe(
-                reduce((acc, cur) => acc + cur, ''),
-                concatMap(str => {
+            let headers = [];
+            let lastLine = '';
 
-                    let lines = str.split('\n');
-                    const lastLine = lines.splice(lines.length - 1, 1)[0];
-                    lines = str.split('\n').map(line => line.split(','));
+            return streamCsv(CSV_PATHS[0]).pipe(
+                map(chunk => {
 
-                    console.log(`line count: ${lines.length}`);
+                    // parsear lineas + extraer headers + pasar sobrante al siguiente chunk
+                    if (lastLine && lastLine !== '')
+                        chunk = lastLine + chunk;
+                    let lines = chunk.split('\n');
 
-                    console.log(`first line:`);
-                    console.log(lines[0]);
+                    if (headers.length === 0)
+                        headers = lines.splice(0, 1)[0].split(',');
 
-                    console.log(`second line:`);
-                    console.log(lines[1]);
+                    if (!lines[lines.length - 1].endsWith('\n'))
+                        lastLine = lines.splice(lines.length - 1, 1)[0];
 
-                    console.log(`last line:`);
-                    console.log(lastLine.split(','));
+                    lines = lines.map(line => line.split(','));
 
-                    return of('');
+                    return lines;
 
-                })
+                }),
+                concatMap(lines => processLines(lines, headers, pgClient))
             );
-            // return parseCsv(CSV_PATHS[0]);
-    
         })
     )
     .subscribe({
         next: res => {
             // console.log(res);
-            console.log(`Stream completed`);
             console.log(res);
         },
         error: err => {
